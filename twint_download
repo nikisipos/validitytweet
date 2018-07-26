@@ -1,0 +1,15 @@
+#!/usr/bin/python3
+
+import twint
+
+# Configure
+c = twint.Config()
+c.Username = "validitylabs"
+#c.Username = "now"
+#c.Search = "pineapple"
+c.Database = 'twint_validitylabs_wo_retweets.sqlite'
+c.Format = "{id} | {date} | {time} | {username} | {likes} | {retweets} | {tweet}"
+
+# Run
+twint.run.Search(c)
+

@@ -1,0 +1,157 @@
+#!/usr/bin/python3
+
+import sqlite3
+import pandas as pd
+from sklearn.feature_extraction.text import CountVectorizer
+from collections import Counter
+import matplotlib.pyplot as plt
+from wordcloud import WordCloud
+
+#read in sql database and turning into pandas dataframe
+
+conn = sqlite3.connect("twint_validitylabs_wo_retweets.sqlite")
+df = pd.read_sql_query("select * from tweets;", conn)
+
+df['datetime'] = df["date"] + " " + df["time"]
+df = df.drop(['date', 'time'], axis = 1 )
+
+df['datetime'] = pd.to_datetime(df['datetime'], format='%Y-%m-%d %H:%M:%S')
+df.set_index('datetime')
+
+
+#turn all text in tweets to lowercase  for word analysis
+df['tweet'] = df['tweet'].str.lower()
+
+#define the lowest and highest 10% of liked tweets
+p10 = df['likes'].quantile(q=0.10)
+p90 = df['likes'].quantile(q=0.90)
+
+#create dataframe containing the most and least liked tweets
+p10_len = df[df.likes <= p10].shape[0]
+p90_len = df[df.likes >= p90].shape[0]
+
+#take the words and their frequencies from the tweets
+TOKENS_ALPHANUMERIC = '[A-Za-z]+(?=\\s+)'
+
+vec_p10_words = CountVectorizer(token_pattern=TOKENS_ALPHANUMERIC)
+vec_p10_words.fit(df[df.likes <= p10].tweet)
+p10_wc_text = ' '.join(vec_p10_words.get_feature_names())
+p10_fit = vec_p10_words.fit_transform(df[df.likes <= p10].tweet).toarray().sum(axis=0)
+p10_freq = dict(zip(vec_p10_words.get_feature_names(), p10_fit))
+p10_freq = {key:val for key, val in p10_freq.items() if val > 1 }
+
+vec_p90_words = CountVectorizer(token_pattern=TOKENS_ALPHANUMERIC)
+vec_p90_words.fit(df[df.likes >= p90].tweet)
+p90_wc_text = ' '.join(vec_p90_words.get_feature_names())
+p90_fit = vec_p90_words.fit_transform(df[df.likes >= p90].tweet).toarray().sum(axis=0)
+p90_freq = dict(zip(vec_p90_words.get_feature_names(), p90_fit))
+p90_freq = {key:val for key, val in p90_freq.items() if val > 1 }
+
+# remove common words:
+common_keys=[]
+for key in p10_freq.keys():
+    if key in p90_freq.keys():
+        common_keys.append(key)
+
+for key in common_keys:
+    p10_freq.pop(key)
+    p90_freq.pop(key)
+
+
+
+#print(df)
+#print('-----------------------------------------------------------------')
+#print(df.info())
+#print('-----------------------------------------------------------------')
+#print(df.describe())
+#print('-----------------------------------------------------------------')
+#print('xxxxxxxxxxxxxxxx')
+#print(len(p10_freq))
+print('words and frequency of the 10% LEAST liked post (p10)')
+print(p10_freq)
+#print('xxxxxxxxxxxxxxxx')
+#print(len(p90_freq))
+print('words and frequency of the 10% MOST liked post (p90)') 
+print(p90_freq)
+#print('-----------------------------------------------------------------')
+
+
+
+### wordcloud
+p10_wordcloud = WordCloud().generate(p10_wc_text)
+
+plt.imshow(p10_wordcloud, interpolation='bilinear')
+plt.title('words of the 10% LEAST liked post (p10)')
+plt.axis("off")
+plt.show()
+plt.savefig('wordcloud_p10.png')
+
+
+p90_wordcloud = WordCloud().generate(p90_wc_text)
+
+plt.imshow(p90_wordcloud, interpolation='bilinear')
+plt.title('words of the 10% MOST liked post (p90)')
+plt.axis("off")
+plt.show()
+plt.savefig('wordcloud_p90.png')
+
+
+
+#Create a plot for showing the evolution of reactions(likes, retweets and replies) with time
+
+#calculating monthly sums of reactions
+react=df[['datetime', 'likes', 'replies', 'retweets']]
+react=react.resample('M', on='datetime').sum()
+
+plt.plot(react.likes, color='red')
+plt.plot(react.replies, color='blue')
+plt.plot(react.retweets, color='green')
+
+#plt.axis((2015, 2018, 0, 50))
+plt.xlabel('Date')
+plt.ylabel('No. of reactions monthly')
+plt.title('Change of reactions over time')
+plt.legend(loc='upper left')
+plt.xticks(rotation=45)
+
+# Show the figure
+plt.show()
+
+# Save the figure
+plt.savefig('reaction-develop.png')
+
+#####################################################################
+
+#Histogram for likes, reply, retweets
+plt.subplot(3,1,1)
+plt.hist(df.likes, bins=10, alpha=0.4)
+plt.title('Likes')
+plt.xlabel('Number of likes')
+plt.ylabel('log No. of tweets')
+plt.yscale('log')
+
+plt.subplot(3,1,2)
+plt.hist(df.replies, bins=10, alpha=0.4)
+plt.title('Replies')
+plt.xlabel('Number of replies')
+plt.ylabel('No. of tweets')
+plt.yscale('log')
+
+
+
+
+plt.subplot(3,1,3)
+plt.hist(df.retweets, bins=10,alpha=0.4)
+
+#plt.legend(loc='upper right')
+plt.title('Retweets')
+plt.xlabel('Number of retweets')
+plt.ylabel('No. of tweets')
+plt.yscale('log')
+
+plt.tight_layout()
+plt.show()
+
+plt.savefig('histreactions.png')
+
+############################i##########################################
