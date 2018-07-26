@@ -83,8 +83,8 @@ p10_wordcloud = WordCloud().generate(p10_wc_text)
 plt.imshow(p10_wordcloud, interpolation='bilinear')
 plt.title('words of the 10% LEAST liked post (p10)')
 plt.axis("off")
-plt.show()
 plt.savefig('wordcloud_p10.png')
+plt.show()
 
 
 p90_wordcloud = WordCloud().generate(p90_wc_text)
@@ -92,8 +92,8 @@ p90_wordcloud = WordCloud().generate(p90_wc_text)
 plt.imshow(p90_wordcloud, interpolation='bilinear')
 plt.title('words of the 10% MOST liked post (p90)')
 plt.axis("off")
-plt.show()
 plt.savefig('wordcloud_p90.png')
+plt.show()
 
 
 
@@ -114,12 +114,12 @@ plt.title('Change of reactions over time')
 plt.legend(loc='upper left')
 plt.xticks(rotation=45)
 
-# Show the figure
-plt.show()
-
 # Save the figure
 plt.savefig('reaction-develop.png')
 
+
+# Show the figure
+plt.show()
 #####################################################################
 
 #Histogram for likes, reply, retweets
@@ -150,8 +150,10 @@ plt.ylabel('No. of tweets')
 plt.yscale('log')
 
 plt.tight_layout()
-plt.show()
 
 plt.savefig('histreactions.png')
+
+plt.show()
+
 
 ############################i##########################################
